@@ -120,10 +120,12 @@ focused app/window ─▶ dwell timer (≥20s, ≥150 words) ─▶ CaptureConte
 1. [Download `MicroLog.zip`](https://github.com/abhishek085/microlog/releases/latest/download/MicroLog.zip) and unzip it.
 2. Drag `MicroLog.app` to **Applications**.
 3. **First launch:** this build isn't notarized (no paid Apple Developer ID yet), so Gatekeeper
-   will say it can't verify the developer. Right-click (Control-click) the app → **Open** →
-   **Open** again in the dialog. You only need to do this once.
+   will say it can't verify the developer. click Done and go to Privacy and Security + see the screenshot below  → **Open Anyway** → again in the dialog. You only need to do this once.
 4. Grant Accessibility, Screen Recording, Automation and Notifications when asked.
 5. MicroLog downloads its AI models on first launch, then runs fully offline.
+
+   <img width="497" height="376" alt="image" src="https://github.com/user-attachments/assets/93b8558d-1b82-4752-a25f-e69a4b1077f8" />
+
 
 Requires Apple Silicon.
 
