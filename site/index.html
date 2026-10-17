@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MicroLog: an ambient reading journal that writes itself</title>
+<meta name="description" content="MicroLog is a free, open-source Mac menu-bar app that quietly turns what you read into notes — summary, key points, tags — with zero typing. Everything runs on your Mac.">
+<meta property="og:title" content="MicroLog: an ambient reading journal that writes itself">
+<meta property="og:description" content="MicroLog notices what you've been reading and turns it into a note, entirely on your Mac. No typing, no cloud.">
+<meta property="og:image" content="https://raw.githubusercontent.com/abhishek085/microlog/main/site/icon.png">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%235C8CF2'/%3E%3Cpath d='M18 18h14a4 4 0 0 1 4 4v24a4 4 0 0 0-4-4H18z' fill='white'/%3E%3Cpath d='M46 18H32a4 4 0 0 0-4 4v24a4 4 0 0 1 4-4h14z' fill='%23D7E2FB'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F5F7FB; --surface:#FFFFFF; --ink:#111827; --muted:#5B6474; --line:#DCE2EC;
+  --blue:#4C72E0; --blue-ink:#3A5BC7; --teal:#00A99B; --teal-soft:#D5F5F1; --amber:#C98512;
+  --display:"Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --body:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0D1424; --surface:#131C30; --ink:#E7ECF5; --muted:#98A3B8; --line:#24304A;
+    --blue:#7E9CF5; --blue-ink:#A6BBFA; --teal:#2ED3C3; --teal-soft:#0F3B3A; --amber:#F2B34B; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0D1424; --surface:#131C30; --ink:#E7ECF5; --muted:#98A3B8; --line:#24304A;
+  --blue:#7E9CF5; --blue-ink:#A6BBFA; --teal:#2ED3C3; --teal-soft:#0F3B3A; --amber:#F2B34B; color-scheme: dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+html,body{overflow-x:clip}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 var(--body);font-variant-numeric:tabular-nums}
+a{color:var(--blue-ink)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+@media (max-width:640px){.wrap{padding:0 16px}}
+
+nav{display:flex;align-items:center;gap:24px;padding:20px 0}
+.mark{display:flex;align-items:center;gap:10px;font:800 20px/1 var(--display);letter-spacing:-.02em;color:var(--ink);text-decoration:none}
+.mark img{width:28px;height:28px;border-radius:7px}
+nav .links{display:flex;gap:20px;margin-left:auto;align-items:center;font-size:15px}
+nav .links a{color:var(--muted);text-decoration:none}
+nav .links a:hover{color:var(--ink)}
+.gh{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink)!important;padding:7px 12px;border-radius:999px}
+.theme{background:none;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:6px 10px;cursor:pointer;font:inherit;font-size:14px}
+@media (max-width:760px){nav .links a.hide-sm{display:none}}
+@media (max-width:520px){.gh .gh-label{display:none}.gh{padding:7px 9px}nav{gap:12px}}
+
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center;padding:48px 0 24px}
+.hero>*{min-width:0}
+@media (max-width:960px){.hero{grid-template-columns:minmax(0,1fr);gap:36px;padding-top:28px}}
+h1{font:700 clamp(36px,5vw,60px)/1.03 var(--display);letter-spacing:-.035em;margin:0 0 22px;max-width:14ch;text-wrap:balance}
+.lead{font-size:18px;line-height:1.6;margin:0 0 28px;max-width:52ch;color:var(--muted)}
+.lead em{font-style:normal;color:var(--ink)}
+.cta{display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px}
+.btn{display:inline-flex;align-items:center;gap:10px;background:var(--blue);color:#fff;text-decoration:none;font:600 16px/1 var(--body);padding:15px 22px;border-radius:12px}
+.btn:hover{background:var(--blue-ink)}
+.btn svg{width:18px;height:18px}
+.req{font:13px/1.55 var(--mono);color:var(--muted)}
+
+.demo{background:#0B1222;color:#D8E1F2;border-radius:16px;padding:22px;border:1px solid #1E2A44}
+.demo .label{font:500 12px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#7D8BA6;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.rec{width:8px;height:8px;border-radius:50%;background:#5C8CF2;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.rec{animation:none}}
+.said{margin:0 0 18px;font-size:15px;line-height:1.65;color:#A9B6CF}
+.said mark{background:none;color:#fff}
+.out{background:#060B17;border:1px solid #1E2A44;border-radius:12px;padding:16px}
+.out .ttl{font:600 15px/1.3 var(--display);color:#fff;margin:0 0 8px}
+.out ul{list-style:none;margin:0 0 14px;padding:0}
+.out li{display:flex;gap:10px;align-items:flex-start;padding:4px 0;font-size:14px;color:#D8E1F2}
+.dot{flex:none;width:6px;height:6px;margin-top:7px;border-radius:50%;background:#5C8CF2}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 12px/1 var(--body);padding:6px 10px;border-radius:999px;background:#16233F;color:#9DB8FF}
+.chip.t{background:#0F3B3A;color:#2ED3C3}
+
+section{padding:56px 0 0}
+h2{font:700 clamp(26px,3vw,36px)/1.15 var(--display);letter-spacing:-.025em;margin:0 0 14px}
+.sub{color:var(--muted);margin:0 0 28px;max-width:62ch}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+@media (max-width:960px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.grid4{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px}
+.card .n{font:500 13px/1 var(--mono);color:var(--blue)}
+.card h3{font:600 19px/1.25 var(--display);margin:10px 0 6px;letter-spacing:-.01em}
+.card p{margin:0;color:var(--muted);font-size:15px}
+
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+table{width:100%;border-collapse:collapse;min-width:520px}
+th{text-align:left;font:500 12px var(--mono);color:var(--muted);padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+td{padding:14px 16px;border-bottom:1px solid var(--line);font-size:15px;vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td small{display:block;color:var(--muted);font-size:13px}
+.note{font:13px/1.6 var(--mono);color:var(--muted);margin:12px 0 0}
+
+.two{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
+.install{background:#0B1222;color:#D8E1F2;border-radius:16px;padding:26px;border:1px solid #1E2A44}
+.install h2{color:#fff}
+.steps{list-style:none;counter-reset:step;margin:0;padding:0}
+.steps li{counter-increment:step;position:relative;padding:16px 0 0 40px}
+.steps li::before{content:counter(step);position:absolute;left:0;top:16px;width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;font:700 14px/26px var(--display);text-align:center}
+.steps h3{font:600 17px/1.3 var(--display);margin:2px 0 4px;color:#fff}
+.steps p{margin:0;color:#A9B6CF;font-size:15px}
+.privacy ul{margin:0;padding:0;list-style:none}
+.privacy li{padding:14px 0;border-bottom:1px solid var(--line)}
+.privacy li:last-child{border-bottom:0}
+.privacy b{display:block;font:600 16px/1.3 var(--display);margin-bottom:2px}
+.privacy span{color:var(--muted);font-size:15px}
+
+details.q{border-top:1px solid var(--line)}
+details.q:last-of-type{border-bottom:1px solid var(--line)}
+details.q summary{cursor:pointer;padding:16px 0;font:600 17px/1.3 var(--display);list-style:none;display:flex;justify-content:space-between;gap:16px}
+details.q summary::-webkit-details-marker{display:none}
+details.q summary::after{content:"+";color:var(--muted);font-weight:400}
+details.q[open] summary::after{content:"–"}
+details.q p{margin:0 0 18px;color:var(--muted);max-width:70ch}
+
+.final{text-align:center;padding:72px 0 0}
+.final h2{margin-bottom:20px}
+.final .cta{justify-content:center}
+
+footer{margin:96px 0 0;padding:28px 0 48px;border-top:1px solid var(--line);color:var(--muted);font-size:14px;display:flex;gap:20px;flex-wrap:wrap}
+footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav aria-label="Main">
+    <a class="mark" href="#top" aria-label="MicroLog home">
+      <img src="icon.png" alt="" width="28" height="28">
+      <span>MicroLog</span>
+    </a>
+    <div class="links">
+      <a class="hide-sm" href="#how">How it works</a>
+      <a class="hide-sm" href="#models">Models</a>
+      <a class="hide-sm" href="#install">Build</a>
+      <a class="hide-sm" href="#faq">FAQ</a>
+      <button class="theme" id="theme" type="button" aria-label="Toggle dark mode">◐</button>
+      <a class="gh" href="https://github.com/abhishek085/microlog"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span class="gh-label">View on GitHub</span></a>
+    </div>
+  </nav>
+
+  <main id="top">
+    <header class="hero">
+      <div>
+        <h1>Read. MicroLog takes the notes.</h1>
+        <p class="lead">It sits quietly in your menu bar and notices what you've actually spent
+          time reading — an article, a doc, a thread. No highlighting, no clipping, no typing.
+          Everything runs <em>on your Mac</em>, so nothing you read is ever sent anywhere.</p>
+        <div class="cta">
+          <a class="btn" href="https://github.com/abhishek085/microlog">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M5 21h14"/></svg>
+            View source &amp; build it
+          </a>
+          <span class="req">macOS · Apple Silicon<br>AI models download once, then it works offline</span>
+        </div>
+      </div>
+
+      <div class="demo" aria-label="Example of one capture">
+        <p class="label"><span class="rec" aria-hidden="true"></span>You read · 4 min</p>
+        <p class="said">A long piece on <mark>vector databases</mark> and how embedding similarity
+          is used for semantic search — you stayed on the tab well past the dwell threshold, so
+          MicroLog quietly picked it up.</p>
+        <p class="label">MicroLog wrote</p>
+        <div class="out">
+          <p class="ttl">Vector databases, explained</p>
+          <ul>
+            <li><span class="dot" aria-hidden="true"></span>Embeddings place similar meaning close together in vector space</li>
+            <li><span class="dot" aria-hidden="true"></span>Approximate nearest-neighbor search trades a little accuracy for speed</li>
+            <li><span class="dot" aria-hidden="true"></span>Indexing strategy matters more than raw dimension count</li>
+          </ul>
+          <div class="chips">
+            <span class="chip t">#databases</span><span class="chip t">#ml</span>
+            <span class="chip">reread next time: skipped (duplicate)</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section id="how">
+      <h2>How it works</h2>
+      <p class="sub">No clipping, no account, no cloud. Just read — the note appears on its own.</p>
+      <div class="grid4">
+        <div class="card"><span class="n">01</span><h3>Capture</h3><p>Tracks the frontmost app/window via Accessibility, with a ScreenCaptureKit + Vision OCR fallback when there's nothing else to read.</p></div>
+        <div class="card"><span class="n">02</span><h3>Filter</h3><p>Only counts it once you've dwelled ~20s and ~150 words — quick app switches never create noise.</p></div>
+        <div class="card"><span class="n">03</span><h3>Dedup &amp; thread</h3><p>URL canonicalization, content hashing, SimHash and embedding similarity catch duplicates and link related reads into one thread.</p></div>
+        <div class="card"><span class="n">04</span><h3>Summarize</h3><p>A local LLM fills in the title, summary, key points, "why it matters" and tags in the background.</p></div>
+      </div>
+    </section>
+
+    <section id="models">
+      <h2>The AI models it uses</h2>
+      <p class="sub">Downloaded once on first launch. Nothing is sent to a server after that.</p>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Job</th><th>Model</th></tr></thead>
+          <tbody>
+            <tr><td>Summarization <small>title, summary, key points, tags</small></td><td>Qwen3.5 0.8B <small>Q4_K_M, via llama.cpp</small></td></tr>
+            <tr><td>Dedup &amp; similarity <small>catches rereads and related threads</small></td><td>EmbeddingGemma 2 <small>UD-Q4_K_XL, via llama.cpp</small></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Both run locally over llama-server on localhost — no network calls beyond the one-time model download.</p>
+    </section>
+
+    <section>
+      <div class="two">
+        <div class="install" id="install">
+          <h2>Build from source</h2>
+          <p style="margin:0 0 6px;color:#A9B6CF;font-size:15px">MicroLog isn't packaged yet — build and run it from Xcode:</p>
+          <ol class="steps">
+            <li><h3>Clone the repo</h3><p><code>git clone https://github.com/abhishek085/microlog.git</code></p></li>
+            <li><h3>Open in Xcode</h3><p>Open the project and select the MyApp scheme.</p></li>
+            <li><h3>Run it (⌘R)</h3><p>Grant Accessibility, Screen Recording, Automation and Notifications when asked.</p></li>
+            <li><h3>Let it set up</h3><p>MicroLog downloads its two AI models (Qwen3.5 0.8B, EmbeddingGemma 2) on first launch, then runs fully offline.</p></li>
+          </ol>
+        </div>
+        <div class="privacy">
+          <h2>Private by design</h2>
+          <ul>
+            <li><b>No account, no cloud</b><span>There's nothing to sign up for and no server that sees what you read.</span></li>
+            <li><b>Everything on-device</b><span>Capture, OCR, and summarization all run locally — no analytics, no cloud APIs.</span></li>
+            <li><b>Denylisted apps are skipped</b><span>Mail, Messages, Terminal, and password managers are never read.</span></li>
+            <li><b>Open source</b><span>MIT-licensed. Read every line on GitHub.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="faq">
+      <h2>Questions</h2>
+      <details class="q"><summary>Do I need internet?</summary><p>Only once, to download the two AI models on first launch. After that MicroLog works fully offline.</p></details>
+      <details class="q"><summary>Does it read everything I look at?</summary><p>No. It only turns a window into a note after you've dwelled on it for ~20 seconds and it has ~150+ words, and it skips denylisted apps like Mail, Messages, Terminal and password managers entirely.</p></details>
+      <details class="q"><summary>What happens if I reread the same article?</summary><p>The dedupe engine recognizes it via URL canonicalization, content hashing, SimHash and embedding similarity, and skips creating a duplicate note.</p></details>
+      <details class="q"><summary>Does it work on Intel Macs?</summary><p>MicroLog targets Apple Silicon Macs.</p></details>
+      <details class="q"><summary>Is it really free?</summary><p>Yes, and open source under the MIT license.</p></details>
+    </section>
+
+    <section class="final">
+      <h2>Let your reading write itself.</h2>
+      <div class="cta">
+        <a class="btn" href="https://github.com/abhishek085/microlog">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M5 21h14"/></svg>
+          View source &amp; build it
+        </a>
+        <span class="req"><a href="https://github.com/abhishek085/microlog">Repository</a></span>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>MicroLog is a free, open-source menu-bar app for ambient reading notes.</span>
+    <a href="https://github.com/abhishek085/microlog">Source</a>
+    <a href="https://github.com/abhishek085/microlog/issues">Report a bug</a>
+  </footer>
+</div>
+
+<script>
+(function () {
+  const root = document.documentElement, key = "microlog-theme";
+  try { const t = localStorage.getItem(key); if (t) root.dataset.theme = t; } catch (e) {}
+  document.getElementById("theme").addEventListener("click", function () {
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    try { localStorage.setItem(key, root.dataset.theme); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>
