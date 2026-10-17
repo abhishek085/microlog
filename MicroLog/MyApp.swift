@@ -49,7 +49,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "sparkles", accessibilityDescription: "Reading Notes")
+            // Template image cut from the app logo so it tints correctly in light/dark menu bars.
+            let icon = NSImage(named: "MenuBarIcon") ?? NSImage(systemSymbolName: "sparkles", accessibilityDescription: nil)
+            icon?.isTemplate = true
+            icon?.accessibilityDescription = "MicroLog"
+            button.image = icon
             button.action = #selector(togglePopover(_:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
             button.target = self

@@ -84,8 +84,9 @@ struct NoteRow: View {
                         Text(note.gist)
                             .font(.system(size: Theme.captionSize))
                             .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                            .lineLimit(2)            // a gist is only useful if you can read it
                             .truncationMode(.tail)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -104,7 +105,8 @@ struct NoteRow: View {
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(.tertiary)
             }
-            .frame(height: Theme.rowHeight)
+            .frame(minHeight: Theme.rowHeight)
+            .padding(.vertical, 6)
             .padding(.horizontal, Theme.cardHorizontalPadding - 4)
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Theme.cardRadius))
             .overlay(

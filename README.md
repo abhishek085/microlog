@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="MyApp/Assets.xcassets/AppIcon.appiconset/icon_256x256.png" alt="MicroLog" width="96" />
+  <img src="MicroLog/Assets.xcassets/AppIcon.appiconset/icon_256x256.png" alt="MicroLog" width="96" />
 </p>
 
 <h1 align="center">MicroLog</h1>
@@ -14,7 +14,8 @@
   <a href="#build-from-source">Build from source</a> ·
   <a href="#what-is-it">What is it</a> ·
   <a href="#the-ai-models-it-uses">Models</a> ·
-  <a href="#permissions-required">Permissions</a>
+  <a href="#permissions-required">Permissions</a> ·
+  <a href="assets/video/microlog-launch.mp4">27-second film</a>
 </p>
 
 <p align="center">
@@ -24,10 +25,7 @@
 </p>
 
 <p align="center">
-  <!-- TODO: replace with a launch GIF/MP4 once one is recorded, e.g.:
-  <a href="assets/video/microlog-launch.mp4"><img src="assets/video/microlog-launch.gif" alt="MicroLog: read, and it quietly takes notes" width="820" /></a>
-  -->
-  <i>A demo video/GIF goes here once one is recorded.</i>
+  <a href="assets/video/microlog-launch.mp4"><img src="assets/video/microlog-launch.gif" alt="MicroLog: you read, it writes the note, duplicates fold together, you search it" width="820" /></a>
 </p>
 
 ---
