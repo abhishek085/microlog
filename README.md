@@ -118,7 +118,7 @@ focused app/window ─▶ dwell timer (≥20s, ≥150 words) ─▶ CaptureConte
 Needs a Mac with Xcode and Apple Silicon.
 
 ```sh
-open "Untitled Project.xcodeproj"
+open "MicroLog.xcodeproj"
 # Select the MyApp scheme, then build & run (⌘R). Models download on first launch.
 ```
 
