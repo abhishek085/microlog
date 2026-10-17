@@ -17,6 +17,9 @@ xcuserdata/
 # macOS
 .DS_Store
 
+# Local release packaging output
+dist/
+
 # Local model/runtime assets downloaded by ModelManager at runtime — never committed
 *.gguf
 *.dylib

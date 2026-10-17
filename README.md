@@ -10,7 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="#build-from-source"><b>⬇ Build from source</b></a> ·
+  <a href="https://github.com/abhishek085/microlog/releases/latest/download/MicroLog.zip"><b>⬇ Download for Mac</b></a> ·
+  <a href="#build-from-source">Build from source</a> ·
   <a href="#what-is-it">What is it</a> ·
   <a href="#the-ai-models-it-uses">Models</a> ·
   <a href="#permissions-required">Permissions</a>
@@ -74,10 +75,11 @@ after that.
 | Job | Model | Link |
 |---|---|---|
 | Summarization (title, summary, key points, tags) | **Qwen3.5 0.8B** (Q4_K_M) | [lmstudio-community/Qwen3.5-0.8B-GGUF](https://huggingface.co/lmstudio-community/Qwen3.5-0.8B-GGUF) |
-| Similarity & dedup embeddings | **EmbeddingGemma 2** (UD-Q4_K_XL) | [unsloth/embeddinggemma-2-GGUF](https://huggingface.co/unsloth/embeddinggemma-2-GGUF) |
+| Similarity & dedup embeddings (text + image) | **EmbeddingGemma 2** (UD-Q4_K_XL, + mmproj vision encoder) | [unsloth/embeddinggemma-2-GGUF](https://huggingface.co/unsloth/embeddinggemma-2-GGUF) |
 
 EmbeddingGemma 2 is what lets the dedupe engine recognize "this is the same article" or "this
-is part of the same thread" even when titles and wording differ.
+is part of the same thread" even when titles and wording differ. Its mmproj vision encoder
+(downloaded separately from Settings) also lets it embed images into that same space.
 
 ## Permissions required
 
@@ -112,6 +114,18 @@ focused app/window ─▶ dwell timer (≥20s, ≥150 words) ─▶ CaptureConte
 | Summarization | `llama-server` (llama.cpp) running Qwen3.5 0.8B over a local JSON-schema chat endpoint |
 | Embeddings | `llama-server` running EmbeddingGemma 2 |
 | Storage | SwiftData |
+
+## Download for Mac
+
+1. [Download `MicroLog.zip`](https://github.com/abhishek085/microlog/releases/latest/download/MicroLog.zip) and unzip it.
+2. Drag `MicroLog.app` to **Applications**.
+3. **First launch:** this build isn't notarized (no paid Apple Developer ID yet), so Gatekeeper
+   will say it can't verify the developer. Right-click (Control-click) the app → **Open** →
+   **Open** again in the dialog. You only need to do this once.
+4. Grant Accessibility, Screen Recording, Automation and Notifications when asked.
+5. MicroLog downloads its AI models on first launch, then runs fully offline.
+
+Requires Apple Silicon.
 
 ## Build from source
 
