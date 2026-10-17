@@ -41,6 +41,16 @@ final class ModelManager: NSObject, @unchecked Sendable {
         FileManager.default.fileExists(atPath: embeddingModelFileURL.path)
     }
 
+    /// The mmproj vision/audio projector that, alongside the base GGUF, lets EmbeddingGemma 2
+    /// embed images (and audio/video) into the same 768-d space as text.
+    var mmprojModelFileURL: URL {
+        modelDirectory.appendingPathComponent("mmproj-embeddinggemma-2-F16.gguf")
+    }
+
+    var isMultimodalProjectorDownloaded: Bool {
+        FileManager.default.fileExists(atPath: mmprojModelFileURL.path)
+    }
+
     var summarizerModelFileURL: URL {
         modelDirectory.appendingPathComponent("Qwen3.5-0.8B-Q4_K_M.gguf")
     }
@@ -64,6 +74,18 @@ final class ModelManager: NSObject, @unchecked Sendable {
         download(
             from: "https://huggingface.co/unsloth/embeddinggemma-2-GGUF/resolve/main/embeddinggemma-2-UD-Q4_K_XL.gguf",
             to: embeddingModelFileURL,
+            progressHandler: progressHandler,
+            completion: completion
+        )
+    }
+
+    func downloadMultimodalProjector(
+        progressHandler: @escaping @Sendable (Double) -> Void,
+        completion: @escaping @Sendable (Result<URL, Error>) -> Void
+    ) {
+        download(
+            from: "https://huggingface.co/unsloth/embeddinggemma-2-GGUF/resolve/main/mmproj-F16.gguf",
+            to: mmprojModelFileURL,
             progressHandler: progressHandler,
             completion: completion
         )

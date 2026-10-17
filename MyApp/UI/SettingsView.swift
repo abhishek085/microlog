@@ -45,6 +45,14 @@ struct SettingsView: View {
                 }
             )
             ModelDownloadRow(
+                label: "Vision projector (image embedding)",
+                sizeLabel: "~550 MB",
+                isDownloaded: ModelManager.shared.isMultimodalProjectorDownloaded,
+                startDownload: { progressHandler, completion in
+                    ModelManager.shared.downloadMultimodalProjector(progressHandler: progressHandler, completion: completion)
+                }
+            )
+            ModelDownloadRow(
                 label: "Summarizer model (Qwen3.5-0.8B)",
                 sizeLabel: "~530 MB",
                 isDownloaded: ModelManager.shared.isSummarizerModelDownloaded,
