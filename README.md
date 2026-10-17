@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/abhishek085/microlog/releases/latest/download/MicroLog.zip"><b>⬇ Download for Mac</b></a> ·
+  <a href="https://github.com/abhishek085/microlog/releases/latest/download/MicroLog.dmg"><b>⬇ Download for Mac</b></a> ·
   <a href="#build-from-source">Build from source</a> ·
   <a href="#what-is-it">What is it</a> ·
   <a href="#the-ai-models-it-uses">Models</a> ·
@@ -117,8 +117,8 @@ focused app/window ─▶ dwell timer (≥20s, ≥150 words) ─▶ CaptureConte
 
 ## Download for Mac
 
-1. [Download `MicroLog.zip`](https://github.com/abhishek085/microlog/releases/latest/download/MicroLog.zip) and unzip it.
-2. Drag `MicroLog.app` to **Applications**.
+1. [Download `MicroLog.dmg`](https://github.com/abhishek085/microlog/releases/latest/download/MicroLog.dmg) and open it.
+2. Drag `MicroLog.app` onto the **Applications** shortcut in the window that opens.
 3. **First launch:** this build isn't notarized (no paid Apple Developer ID yet), so Gatekeeper
    will say it can't verify the developer. click Done and go to Privacy and Security + see the screenshot below  → **Open Anyway** → again in the dialog. You only need to do this once.
 4. Grant Accessibility, Screen Recording, Automation and Notifications when asked.
@@ -128,6 +128,14 @@ focused app/window ─▶ dwell timer (≥20s, ≥150 words) ─▶ CaptureConte
 
 
 Requires Apple Silicon.
+
+MicroLog is a menu-bar app with no Dock icon. Look for the sparkles icon in the menu bar.
+
+**Quit:** click the power button in the popover footer, or right-click the menu-bar icon → **Quit MicroLog**.
+
+**Uninstall:** quit the app, drag `MicroLog.app` from Applications to the Trash, then delete the
+downloaded models and runtime (~1.3 GB) with `rm -rf ~/Library/Application\ Support/AmbientTrace`.
+If you launched it from outside Applications, it offers to move itself there on first run.
 
 ## Build from source
 

@@ -26,13 +26,13 @@ actor SummarizerEngine {
     private static let jsonSchema: [String: Any] = [
         "type": "object",
         "properties": [
-            "title": ["type": "string"],
+            "gist": ["type": "string"],
             "summary": ["type": "string"],
             "keyPoints": ["type": "array", "items": ["type": "string"], "minItems": 2, "maxItems": 4],
             "whyItMatters": ["type": "string"],
             "tags": ["type": "array", "items": ["type": "string"], "minItems": 1, "maxItems": 5]
         ],
-        "required": ["title", "summary", "keyPoints", "whyItMatters", "tags"],
+        "required": ["gist", "summary", "keyPoints", "whyItMatters", "tags"],
         "additionalProperties": false
     ]
 
@@ -73,6 +73,12 @@ actor SummarizerEngine {
         return contentData
     }
 
+    func shutdown() {
+        serverProcess?.terminate()
+        serverProcess = nil
+        isReady = false
+    }
+
     private struct ChatCompletionResponse: Decodable {
         struct Choice: Decodable {
             struct Message: Decodable { let content: String }
@@ -95,7 +101,8 @@ actor SummarizerEngine {
                 "-m", ModelManager.shared.summarizerModelFileURL.path,
                 "--jinja",
                 "-ngl", "99",
-                "-c", "4096",
+                // One slot: by default -c is divided across 4 slots, leaving each only 1024 tokens.
+                "-c", "4096", "-np", "1",
                 "--port", String(port),
                 "--host", "127.0.0.1"
             ]
@@ -104,12 +111,7 @@ actor SummarizerEngine {
             process.standardError = FileHandle.nullDevice
             try process.run()
             serverProcess = process
-
-            #if os(macOS)
-            NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: nil) { [process] _ in
-                if process.isRunning { process.terminate() }
-            }
-            #endif
+            ServerProcessRegistry.shared.register(process)
         }
 
         let deadline = Date().addingTimeInterval(30)

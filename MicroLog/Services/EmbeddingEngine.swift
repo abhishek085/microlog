@@ -21,6 +21,7 @@ actor EmbeddingEngine {
     private let port: UInt16 = 51977
     private var serverProcess: Process?
     private var isReady = false
+    private var serverHasMmproj = false
 
     private init() {}
 
@@ -38,14 +39,16 @@ actor EmbeddingEngine {
         }
         try await ensureServerRunning()
 
-        let formattedText = "title: None | text: \(text)"
+        // ~5k chars stays well inside the 2k-token window and plenty for a similarity fingerprint.
+        let formattedText = "title: None | text: \(text.prefix(5_000))"
         var request = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/embedding")!)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(["content": formattedText])
         request.timeoutInterval = 30
 
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try Self.requireOK(response, data)
         let decoded = try JSONDecoder().decode([EmbeddingResponseItem].self, from: data)
         return decoded.first?.embedding.first ?? []
     }
@@ -59,6 +62,8 @@ actor EmbeddingEngine {
               ModelManager.shared.isMultimodalProjectorDownloaded else {
             throw NSError(domain: "EmbeddingEngine", code: 404, userInfo: [NSLocalizedDescriptionKey: "Model GGUF or mmproj projector not found locally."])
         }
+        // The projector can finish downloading after the server started; it's only read at startup.
+        if serverProcess != nil, !serverHasMmproj { shutdown() }
         try await ensureServerRunning()
 
         let dataURL = "data:\(mimeType);base64,\(data.base64EncodedString())"
@@ -72,7 +77,8 @@ actor EmbeddingEngine {
         request.httpBody = try JSONEncoder().encode(body)
         request.timeoutInterval = 30
 
-        let (responseData, _) = try await URLSession.shared.data(for: request)
+        let (responseData, response) = try await URLSession.shared.data(for: request)
+        try Self.requireOK(response, responseData)
         let decoded = try JSONDecoder().decode(OAIEmbeddingResponse.self, from: responseData)
         return decoded.data.first?.embedding ?? []
     }
@@ -119,10 +125,16 @@ actor EmbeddingEngine {
                 "--embeddings",
                 "--pooling", "mean",
                 "-ngl", "99",
+                // Embeddings must fit in one physical batch, and llama-server clamps -ub to 512 by
+                // default, which made any page over ~400 words fail with HTTP 500 (and silently fall
+                // back to placeholder vectors). A single 2k slot (page text is capped below) also avoids reserving
+                // the model's full 262k-token KV cache x 4 slots (~1.3 GB RSS).
+                "-c", "2048", "-b", "2048", "-ub", "2048", "-np", "1",
                 "--port", String(port),
                 "--host", "127.0.0.1"
             ]
-            if ModelManager.shared.isMultimodalProjectorDownloaded {
+            serverHasMmproj = ModelManager.shared.isMultimodalProjectorDownloaded
+            if serverHasMmproj {
                 arguments.append(contentsOf: ["--mmproj", ModelManager.shared.mmprojModelFileURL.path])
             }
             process.arguments = arguments
@@ -131,12 +143,7 @@ actor EmbeddingEngine {
             process.standardError = FileHandle.nullDevice
             try process.run()
             serverProcess = process
-
-            #if os(macOS)
-            NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: nil) { [process] _ in
-                if process.isRunning { process.terminate() }
-            }
-            #endif
+            ServerProcessRegistry.shared.register(process)
         }
 
         // Poll until the server accepts connections (model load can take a few seconds).
@@ -151,12 +158,31 @@ actor EmbeddingEngine {
         throw NSError(domain: "EmbeddingEngine", code: 408, userInfo: [NSLocalizedDescriptionKey: "Timed out waiting for llama-server to become ready."])
     }
 
+    /// Starts the server and loads the model ahead of the first capture so it isn't paid for then.
+    func warmUp() async {
+        guard ModelManager.shared.isEmbeddingModelDownloaded else { return }
+        try? await ensureServerRunning()
+    }
+
+    func shutdown() {
+        serverProcess?.terminate()
+        serverProcess?.waitUntilExit() // free the port before any restart
+        serverProcess = nil
+        isReady = false
+        serverHasMmproj = false
+    }
+
+    private static func requireOK(_ response: URLResponse, _ data: Data) throws {
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            let body = String(data: data.prefix(200), encoding: .utf8) ?? ""
+            throw NSError(domain: "EmbeddingEngine", code: (response as? HTTPURLResponse)?.statusCode ?? -1,
+                          userInfo: [NSLocalizedDescriptionKey: "llama-server error: \(body)"])
+        }
+    }
+
     private func pingServer() async -> Bool {
-        guard let url = URL(string: "http://127.0.0.1:\(port)/embedding") else { return false }
+        guard let url = URL(string: "http://127.0.0.1:\(port)/health") else { return false }
         var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try? JSONEncoder().encode(["content": "ping"])
         request.timeoutInterval = 2
         guard let (_, response) = try? await URLSession.shared.data(for: request),
               let http = response as? HTTPURLResponse else { return false }

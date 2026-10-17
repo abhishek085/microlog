@@ -36,7 +36,7 @@ enum Theme {
     static let gearHit: CGFloat = 24
 
     // Note row
-    static let rowHeight: CGFloat = 36
+    static let rowHeight: CGFloat = 46
     static let timestampWidth: CGFloat = 40
 
     // Detail

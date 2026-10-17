@@ -34,13 +34,21 @@ struct SourceChip: View {
         switch source {
         case .x: return "X"
         case .linkedin: return "in"
-        case .article: return "Article"
+        case .reddit: return "Reddit"
+        case .hackernews: return "HN"
+        case .github: return "Git"
+        case .youtube: return "YT"
+        case .article: return "Web"
         }
     }
     private var colors: (Color, Color) {
         switch source {
         case .x: return (.primary.opacity(0.12), .primary)
         case .linkedin: return (.blue.opacity(0.14), .blue)
+        case .reddit: return (.orange.opacity(0.16), .orange)
+        case .hackernews: return (.orange.opacity(0.16), .orange)
+        case .github: return (.purple.opacity(0.14), .purple)
+        case .youtube: return (.red.opacity(0.14), .red)
         case .article: return (.green.opacity(0.14), .green)
         }
     }
@@ -64,15 +72,23 @@ struct NoteRow: View {
                     .foregroundStyle(.secondary)
                     .frame(width: Theme.timestampWidth, alignment: .leading)
 
-                if note.isSummarizing {
-                    ShimmerLine()
-                } else {
+                // Line 1: where it came from. Line 2: what it is, in one glance.
+                VStack(alignment: .leading, spacing: 2) {
                     Text(truncated(note.title))
                         .font(.system(size: Theme.bodySize, weight: .semibold))
                         .lineLimit(1)
                         .truncationMode(.tail)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if note.isSummarizing && note.gist.isEmpty {
+                        ShimmerLine()
+                    } else if !note.gist.isEmpty {
+                        Text(note.gist)
+                            .font(.system(size: Theme.captionSize))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 SourceChip(source: note.source)
 

@@ -11,8 +11,17 @@ struct PopoverRoot: View {
                     HStack {
                         TodayRow(count: state.notes.count)
                         Spacer()
+                        Button {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(state.todayDigestMarkdown(), forType: .string)
+                        } label: { Image(systemName: "doc.on.clipboard") }
+                            .buttonStyle(.borderless).controlSize(.small).help("Copy today's notes as Markdown")
                         Button { state.takeNote() } label: { Label("Take note", systemImage: "plus.circle.fill") }
                             .buttonStyle(.borderedProminent).tint(.accentColor).controlSize(.small)
+                    }
+                    if state.notes.count > 3 {
+                        TextField("Search notes", text: $state.searchText)
+                            .textFieldStyle(.roundedBorder).controlSize(.small)
                     }
                     timeline
                     FooterStatusBar(state: state)
@@ -63,14 +72,14 @@ struct PopoverRoot: View {
                     NoteRow(note: note, state: state)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
-                if state.notes.count > state.visibleCount {
+                if state.filteredNotes.count > state.visibleCount {
                     Button {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                             state.visibleCount += 15
                         }
                     } label: {
                         HStack {
-                            Text("Show \(min(15, state.notes.count - state.visibleCount)) more")
+                            Text("Show \(min(15, state.filteredNotes.count - state.visibleCount)) more")
                                 .font(.system(size: Theme.bodySize))
                             Spacer()
                             Image(systemName: "chevron.down")
@@ -83,7 +92,7 @@ struct PopoverRoot: View {
                     }
                     .buttonStyle(.plain)
                 }
-                if state.notes.isEmpty {
+                if state.filteredNotes.isEmpty && state.notes.isEmpty {
                     VStack(spacing: 6) {
                         Image(systemName: "book.pages").font(.system(size: 22))
                         Text(Theme.emptyTitle).font(.system(size: Theme.bodySize, weight: .semibold))

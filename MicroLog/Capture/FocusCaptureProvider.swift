@@ -9,6 +9,9 @@ final class FocusCaptureProvider: CaptureProvider {
     private let policy: CapturePolicy
     private var dwellKey: String?
     private var dwellStart: Date?
+    private var lastCaptured: (key: String, at: Date)?
+    /// A window we've already captured isn't re-screenshotted/OCR'd on every poll while it stays focused.
+    private let recaptureInterval: TimeInterval = 300
 
     init(policy: CapturePolicy = CapturePolicy(
         allowedDomains: [],
@@ -22,7 +25,7 @@ final class FocusCaptureProvider: CaptureProvider {
     }
 
     func currentContext() async throws -> CaptureContext? {
-        guard let app = NSWorkspace.shared.frontmostApplication else { return nil }
+        guard let app = FocusCapture.targetApp else { return nil }
         let appName = app.localizedName ?? "Unknown"
         let bundleID = app.bundleIdentifier ?? ""
 
@@ -47,19 +50,30 @@ final class FocusCaptureProvider: CaptureProvider {
             return nil
         }
 
-        let raw = await FocusCapture.captureContext()
+        if let last = lastCaptured, last.key == key, now.timeIntervalSince(last.at) < recaptureInterval {
+            return nil
+        }
+
+        let capture = await FocusCapture.captureContext()
+        let raw = capture.text
         guard !raw.isEmpty else { return nil }
 
+        lastCaptured = (key, now)
+        let url = FocusCapture.focusedDocumentURL()
+        let info = SourceDetector.detect(appName: appName, windowTitle: windowTitle, url: url)
         let isPrivate = windowTitle.localizedCaseInsensitiveContains("private")
-        let title = windowTitle.isEmpty ? appName : windowTitle
 
         return CaptureContext(
-            title: title,
+            rawURL: url,
+            title: windowTitle.isEmpty ? appName : windowTitle,
             text: raw,
-            domain: appName,
-            source: .article,
+            author: info.author,
+            domain: info.site,
+            source: info.source,
             appBundleID: bundleID,
-            isPrivate: isPrivate
+            isPrivate: isPrivate,
+            imageData: capture.imageJPEG,
+            sourceInfo: info
         )
     }
 }

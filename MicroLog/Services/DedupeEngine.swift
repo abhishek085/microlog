@@ -94,7 +94,17 @@ struct DedupeEngine {
     // Convenience: build a candidate from context (async to allow on-device embedding).
     static func makeCandidate(from context: CaptureContext, embeddingService: (any EmbeddingService)? = nil) async -> Candidate {
         let service: any EmbeddingService = embeddingService ?? PlaceholderEmbeddingService()
-        let embedding = try? await service.embed(text: context.text)
+        let textEmbedding = try? await service.embed(text: context.text)
+        var embedding = textEmbedding
+        // EmbeddingGemma 2 puts text and images in one 768-d space, so the screenshot's vector can be
+        // blended with the text vector: "same article" then also reflects how the page looks, not only
+        // what OCR/AX happened to read. Text dominates because screenshots include unrelated chrome.
+        if let text = textEmbedding, let data = context.imageData,
+           let image = try? await service.embed(imageData: data), image.count == text.count {
+            let blended = zip(text, image).map { 0.65 * $0 + 0.35 * $1 }
+            let norm = blended.reduce(0) { $0 + $1 * $1 }.squareRoot()
+            embedding = norm > 0 ? blended.map { $0 / norm } : text
+        }
         return Candidate(
             canonicalURL: URLCanonicalizer.canonicalize(context.rawURL),
             contentHash: TextNormalizer.sha256(context.text),

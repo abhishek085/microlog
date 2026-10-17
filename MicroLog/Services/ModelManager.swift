@@ -147,6 +147,31 @@ final class ModelManager: NSObject, @unchecked Sendable {
         try? FileManager.default.removeItem(at: archiveURL)
     }
 
+    /// Downloads whatever the app needs to run (runtime, embedding model, summarizer, and the vision projector that lets screenshots be embedded) that isn't on
+    /// disk yet, one at a time (the downloader holds a single in-flight handler). The optional
+    /// `status` receives a short progress
+    /// string, or nil when finished.
+    func ensureCoreAssets(status: @escaping @Sendable (String?) -> Void) async {
+        typealias Starter = (@escaping @Sendable (Double) -> Void, @escaping @Sendable (Result<URL, Error>) -> Void) -> Void
+        let steps: [(label: String, present: Bool, start: Starter)] = [
+            ("llama.cpp runtime", isRuntimeDownloaded, { self.downloadRuntime(progressHandler: $0, completion: $1) }),
+            ("embedding model", isEmbeddingModelDownloaded, { self.downloadEmbeddingModel(progressHandler: $0, completion: $1) }),
+            ("summarizer model", isSummarizerModelDownloaded, { self.downloadSummarizerModel(progressHandler: $0, completion: $1) }),
+            ("vision projector", isMultimodalProjectorDownloaded, { self.downloadMultimodalProjector(progressHandler: $0, completion: $1) })
+        ]
+        for step in steps where !step.present {
+            status("Downloading \(step.label)…")
+            let ok: Bool = await withCheckedContinuation { continuation in
+                step.start({ p in status("Downloading \(step.label)… \(Int(p * 100))%") }, { result in
+                    if case .failure(let error) = result { print("[ModelManager] \(step.label) failed: \(error.localizedDescription)") }
+                    if case .success = result { continuation.resume(returning: true) } else { continuation.resume(returning: false) }
+                })
+            }
+            if !ok { status("Couldn't download \(step.label) — retry from Settings"); return }
+        }
+        status(nil)
+    }
+
     private func download(
         from urlString: String,
         to destination: URL,

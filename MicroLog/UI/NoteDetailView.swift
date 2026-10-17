@@ -11,6 +11,9 @@ struct NoteDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(note.title).font(.system(size: Theme.detailTitleSize, weight: .semibold)).lineLimit(3)
+                    if !note.gist.isEmpty {
+                        Text(note.gist).font(.system(size: Theme.bodySize)).foregroundStyle(.secondary)
+                    }
                     metaRow
                     section("SUMMARY") {
                         if note.isSummarizing {
@@ -100,7 +103,7 @@ struct NoteDetailView: View {
 
     private var actionBar: some View {
         HStack {
-            Button { regenerateNote(); state.onRegenerate(note) } label: { Text("Regenerate summary") }
+            Button { regenerateNote() } label: { Text("Regenerate summary") }
                 .buttonStyle(.bordered).controlSize(.small)
             Button(role: .destructive) { deleteNote(); state.onDelete(note) } label: { Text("Delete") }
                 .buttonStyle(.bordered).controlSize(.small)
@@ -117,18 +120,12 @@ struct NoteDetailView: View {
     private func regenerateNote() {
         guard let idx = state.notes.firstIndex(where: { $0.id == note.id }) else { return }
         state.notes[idx].isSummarizing = true
-        Task {
-            try? await Task.sleep(for: .seconds(1))
-            state.notes[idx].summary = "Regenerated summary tailored to your directive."
-            state.notes[idx].isSummarizing = false
-            state.onRegenerate(note)
-        }
+        state.onRegenerate(note)   // the capture service re-summarizes and pushes the update back
     }
 
     private func deleteNote() {
         state.notes.removeAll { $0.id == note.id }
         state.selectedNoteID = nil
-        state.onDelete(note)
     }
 
     private func timeStr(_ d: Date) -> String { let f = DateFormatter(); f.dateFormat = "HH:mm"; return f.string(from: d) }

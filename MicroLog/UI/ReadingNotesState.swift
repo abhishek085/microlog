@@ -3,6 +3,8 @@ import SwiftUI
 struct NoteUI: Identifiable, Equatable {
     let id: UUID
     var title: String
+    var gist: String
+    var url: String
     var source: Source
     var domain: String
     var author: String?
@@ -14,9 +16,11 @@ struct NoteUI: Identifiable, Equatable {
     var whyItMatters: String
     var tags: [String]
 
-    init(id: UUID = UUID(), title: String, source: Source, domain: String, author: String? = nil, capturedAt: Date = Date(), seenCount: Int = 1, isSummarizing: Bool = false, summary: String = "", keyPoints: [String] = [], whyItMatters: String = "", tags: [String] = []) {
+    init(id: UUID = UUID(), title: String, gist: String = "", url: String = "", source: Source, domain: String, author: String? = nil, capturedAt: Date = Date(), seenCount: Int = 1, isSummarizing: Bool = false, summary: String = "", keyPoints: [String] = [], whyItMatters: String = "", tags: [String] = []) {
         self.id = id
         self.title = title
+        self.gist = gist
+        self.url = url
         self.source = source
         self.domain = domain
         self.author = author
@@ -27,6 +31,15 @@ struct NoteUI: Identifiable, Equatable {
         self.keyPoints = keyPoints
         self.whyItMatters = whyItMatters
         self.tags = tags
+    }
+
+    init(_ note: Note) {
+        self.init(
+            id: note.id, title: note.title, gist: note.gist ?? "", url: note.canonicalURL, source: note.source,
+            domain: note.domain, author: note.author, capturedAt: note.capturedAt, seenCount: note.seenCount,
+            isSummarizing: note.state == .summarizing, summary: note.summary ?? "", keyPoints: note.keyPoints,
+            whyItMatters: note.whyItMatters ?? "", tags: note.tags
+        )
     }
 
     static func samples(count: Int = 6) -> [NoteUI] {
@@ -69,6 +82,8 @@ final class ReadingNotesUIState {
     var selectedNoteID: UUID? = nil
     var showSettings: Bool = false
     var ambient: AmbientPillState? = nil
+    var setupStatus: String? = nil
+    var searchText: String = ""
     var notes: [NoteUI] = NoteUI.samples(count: 6)
 
     // empty hooks
@@ -79,6 +94,7 @@ final class ReadingNotesUIState {
     var onPauseToggle: () -> Void = { }
     var onOpenSettings: () -> Void = { }
     var onTakeNote: () -> Void = { }
+    var onQuit: () -> Void = { }
     var onSaveAsNew: () -> Void = { }
 
     func takeNote() {
@@ -86,7 +102,34 @@ final class ReadingNotesUIState {
         onTakeNote()
     }
 
-    var displayedNotes: [NoteUI] { Array(notes.prefix(visibleCount)) }
+    /// Notes matching the search box (title, gist, summary, author, site, tags).
+    var filteredNotes: [NoteUI] {
+        let q = searchText.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return notes }
+        return notes.filter { n in
+            [n.title, n.gist, n.summary, n.author ?? "", n.domain, n.tags.joined(separator: " ")]
+                .contains { $0.lowercased().contains(q) }
+        }
+    }
+
+    var displayedNotes: [NoteUI] { Array(filteredNotes.prefix(visibleCount)) }
+
+    /// Today's notes as Markdown, ready to paste into a journal, standup or newsletter draft.
+    func todayDigestMarkdown() -> String {
+        let cal = Calendar.current
+        let today = notes.filter { cal.isDateInToday($0.capturedAt) }.sorted { $0.capturedAt < $1.capturedAt }
+        let f = DateFormatter(); f.dateFormat = "EEE, MMM d"
+        let t = DateFormatter(); t.dateFormat = "HH:mm"
+        var out = "# Reading log — \(f.string(from: Date()))\n\n"
+        for n in today {
+            let link = n.url.isEmpty ? n.title : "[\(n.title)](\(n.url))"
+            out += "- \(t.string(from: n.capturedAt)) \(link)"
+            if !n.gist.isEmpty { out += " — \(n.gist)" }
+            out += "\n"
+            if !n.summary.isEmpty { out += "  - \(n.summary)\n" }
+        }
+        return out
+    }
 }
 
 enum AmbientPillKind { case noted, duplicate, askToSave }

@@ -89,10 +89,13 @@ struct FooterStatusBar: View {
                 }
                 .buttonStyle(.plain)
                 .frame(width: Theme.minHit, height: Theme.minHit)
-                Text(state.isPaused ? "Paused" : "Ambient reader active").font(.system(size: Theme.captionSize)).foregroundStyle(.secondary)
+                Text(state.setupStatus ?? (state.isPaused ? "Paused" : "Ambient reader active")).lineLimit(1).font(.system(size: Theme.captionSize)).foregroundStyle(.secondary)
                 Spacer()
                 Button { state.showSettings = true; state.onOpenSettings() } label: { Image(systemName: "gearshape").font(.system(size: Theme.iconMedium, weight: .semibold)) }
                     .buttonStyle(.plain).frame(width: Theme.gearHit, height: Theme.gearHit)
+                Button { state.onQuit() } label: { Image(systemName: "power").font(.system(size: Theme.iconMedium, weight: .semibold)) }
+                    .buttonStyle(.plain).frame(width: Theme.gearHit, height: Theme.gearHit)
+                    .help("Quit MicroLog")
             }
             .frame(height: 28)
             .padding(.horizontal, Theme.outerHorizontalPadding)

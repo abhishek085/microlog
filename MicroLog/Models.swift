@@ -7,6 +7,10 @@ import CryptoKit
 enum Source: String, Codable, CaseIterable, Identifiable {
     case x = "x"
     case linkedin = "linkedin"
+    case reddit = "reddit"
+    case hackernews = "hackernews"
+    case github = "github"
+    case youtube = "youtube"
     case article = "article"
 
     var id: String { rawValue }
@@ -15,6 +19,10 @@ enum Source: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .x: return "X"
         case .linkedin: return "LinkedIn"
+        case .reddit: return "Reddit"
+        case .hackernews: return "Hacker News"
+        case .github: return "GitHub"
+        case .youtube: return "YouTube"
         case .article: return "Article"
         }
     }
@@ -39,7 +47,11 @@ final class Note {
     var domain: String
     var author: String?
     var title: String
+    /// One-line "what is this" (e.g. "Tweet about the new Swift Testing framework").
+    var gist: String?
     var summary: String?
+    /// Captured page text (capped) so a summary can be regenerated later.
+    var sourceText: String?
     var keyPoints: [String]
     var whyItMatters: String?
     var tags: [String]
@@ -69,6 +81,8 @@ final class Note {
         self.domain = domain
         self.author = author
         self.title = title
+        self.gist = nil
+        self.sourceText = nil
         self.summary = nil
         self.keyPoints = []
         self.whyItMatters = nil
@@ -121,6 +135,10 @@ struct CaptureContext {
     let capturedAt: Date
     let threadID: String?
     let wordCount: Int
+    /// Downscaled JPEG of the screen at capture time, embedded by EmbeddingGemma 2's vision encoder.
+    let imageData: Data?
+    /// Where/who the capture came from, used to build the note title and steer the summary.
+    let sourceInfo: SourceInfo?
 
     init(rawURL: String? = nil,
          title: String,
@@ -132,7 +150,11 @@ struct CaptureContext {
          isPrivate: Bool = false,
          capturedAt: Date = Date(),
          threadID: String? = nil,
-         wordCount: Int? = nil) {
+         wordCount: Int? = nil,
+         imageData: Data? = nil,
+         sourceInfo: SourceInfo? = nil) {
+        self.imageData = imageData
+        self.sourceInfo = sourceInfo
         self.rawURL = rawURL
         self.title = title
         self.text = text
@@ -151,6 +173,7 @@ struct CaptureContext {
 
 struct SummaryResult {
     let title: String
+    let gist: String
     let summary: String
     let keyPoints: [String]
     let whyItMatters: String

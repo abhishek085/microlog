@@ -114,18 +114,34 @@ final class ReadingCaptureService {
     }
 
     private func makeNote(from ctx: CaptureContext, candidate: DedupeEngine.Candidate) -> Note {
-        Note(
+        let note = Note(
             canonicalURL: candidate.canonicalURL,
             source: ctx.source,
             domain: ctx.domain,
             author: ctx.author,
-            title: String(ctx.title.prefix(60)),
+            title: ctx.sourceInfo.map(SourceDetector.title(for:)) ?? String(ctx.title.prefix(60)),
             capturedAt: ctx.capturedAt,
             contentHash: candidate.contentHash,
             simhash: candidate.simhash,
             embedding: candidate.embedding,
             threadID: ctx.threadID
         )
+        note.sourceText = String(ctx.text.prefix(4000))
+        return note
+    }
+
+    /// Re-runs the summarizer over the text captured for `id`.
+    func regenerate(noteID id: UUID) {
+        guard let note = store.allNotes().first(where: { $0.id == id }), let text = note.sourceText else { return }
+        let ctx = CaptureContext(
+            rawURL: note.canonicalURL.isEmpty ? nil : note.canonicalURL, title: note.title, text: text,
+            author: note.author, domain: note.domain, source: note.source,
+            sourceInfo: SourceInfo(source: note.source, author: note.author, site: note.domain, subject: note.title,
+                                   kind: note.source.displayName)
+        )
+        note.state = .summarizing
+        onNoteUpdated(NoteUI(note))
+        summarizeInBackground(note, context: ctx, force: true)
     }
 
     private func summarizeInBackground(_ note: Note, context: CaptureContext, force: Bool = false) {
@@ -135,7 +151,7 @@ final class ReadingCaptureService {
             _ = force
             do {
                 let result = try await self.summarizer.summarize(context, directive: directive)
-                note.title = result.title
+                note.gist = result.gist
                 note.summary = result.summary
                 note.keyPoints = result.keyPoints
                 note.whyItMatters = result.whyItMatters
@@ -146,6 +162,7 @@ final class ReadingCaptureService {
             } catch {
                 note.state = .ready
                 if note.summary == nil { note.summary = context.text.prefix(200).description }
+                if note.gist == nil { note.gist = context.sourceInfo?.subject }
                 store.update(note)
                 onNoteUpdated(noteUI(from: note))
             }
@@ -153,22 +170,7 @@ final class ReadingCaptureService {
     }
 }
 
-    private func noteUI(from note: Note) -> NoteUI {
-        NoteUI(
-            id: note.id,
-            title: note.title,
-            source: note.source,
-            domain: note.domain,
-            author: note.author,
-            capturedAt: note.capturedAt,
-            seenCount: note.seenCount,
-            isSummarizing: note.state == .summarizing,
-            summary: note.summary ?? "",
-            keyPoints: note.keyPoints,
-            whyItMatters: note.whyItMatters ?? "",
-            tags: note.tags
-        )
-    }
+    private func noteUI(from note: Note) -> NoteUI { NoteUI(note) }
 
 #if os(macOS)
     private func postNativeNotification(title: String, body: String) {
